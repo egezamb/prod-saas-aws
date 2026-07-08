@@ -1,0 +1,72 @@
+name: Deploy
+
+# Build the image, push to ECR, and roll the ECS service — on merge to main.
+# Skips cleanly (warns, doesn't fail) until AWS credentials are configured, so
+# the pipeline is safe to merge before the infra exists.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: eu-central-1
+  ECR_REPOSITORY: prod-saas-prod
+  ECS_CLUSTER: prod-saas-prod
+  ECS_SERVICE: prod-saas-prod
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check AWS credentials are configured
+        id: creds
+        env:
+          AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+        run: |
+          if [ -z "$AWS_ROLE_ARN" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::AWS_ROLE_ARN not set — skipping deploy. Add it (OIDC role) to enable CD."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Configure AWS credentials (OIDC)
+        if: steps.creds.outputs.configured == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        if: steps.creds.outputs.configured == 'true'
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image
+        if: steps.creds.outputs.configured == 'true'
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+        run: |
+          IMAGE="$REGISTRY/${ECR_REPOSITORY}:${GITHUB_SHA::7}"
+          docker build -t "$IMAGE" -t "$REGISTRY/${ECR_REPOSITORY}:latest" ./app
+          docker push "$IMAGE"
+          docker push "$REGISTRY/${ECR_REPOSITORY}:latest"
+
+      - name: Roll the ECS service
+        if: steps.creds.outputs.configured == 'true'
+        run: |
+          aws ecs update-service \
+            --cluster "$ECS_CLUSTER" \
+            --service "$ECS_SERVICE" \
+            --force-new-deployment >/dev/null
+          echo "Triggered a new deployment of $ECS_SERVICE."
