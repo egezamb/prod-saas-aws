@@ -1,3 +1,4 @@
+# trivy:ignore:AWS-0053 The ALB is the public front door.
 resource "aws_lb" "main" {
   name               = local.name
   load_balancer_type = "application"
@@ -35,6 +36,7 @@ locals {
 }
 
 # HTTP listener: redirect to HTTPS when a cert is configured, otherwise forward.
+# trivy:ignore:AWS-0054 Plain HTTP only without a certificate_arn; with one, port 80 redirects.
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.main.arn
   port              = 80

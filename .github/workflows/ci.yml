@@ -42,8 +42,8 @@ jobs:
           curl -sSLo trivy.tgz https://github.com/aquasecurity/trivy/releases/download/v0.75.0/trivy_0.75.0_Linux-64bit.tar.gz
           echo "c6e65abddb348e25f10549df887045629cf28cc72453cd1c63acb717316b3f3f  trivy.tgz" | sha256sum -c -
           tar xzf trivy.tgz trivy
-      # Accepted findings are listed, with their reason, in .trivyignore.yaml.
-      - run: ./trivy config --ignorefile .trivyignore.yaml --severity HIGH,CRITICAL --exit-code 1 .
+      # Accepted findings are marked with a trivy:ignore comment on the resource, with the reason.
+      - run: ./trivy config --severity HIGH,CRITICAL --exit-code 1 .
 
   app:
     name: App (test + docker build)

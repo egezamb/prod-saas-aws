@@ -55,8 +55,9 @@ Terraform (CPU, env, secrets) reaches the service with the next deploy, which
 bases its revision on the family's latest one.
 
 ### Accepted scanner findings
-`trivy config` runs in CI. Three findings are accepted on purpose and listed in
-`.trivyignore` with their reason: the ALB is public (it is the front door), HTTP
+`trivy config` runs in CI. Three findings are accepted on purpose, each marked
+with a `trivy:ignore` comment on its own resource, with the reason, so the same
+finding on another resource still fails: the ALB is public (it is the front door), HTTP
 is served when no `certificate_arn` is given (TLS is optional for a demo), and
 tasks may reach any host on 443 (ECR, Secrets Manager and CloudWatch through the
 NAT gateway; VPC endpoints would remove this, at their own hourly cost).
