@@ -18,4 +18,6 @@ RUN useradd -m appuser
 USER appuser
 
 EXPOSE 8000
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT}"]
+# exec makes uvicorn PID 1, so the SIGTERM ECS sends on a deploy reaches it and it shuts down
+# cleanly, instead of sh ignoring it until the task is killed after the 30 s stop timeout.
+CMD ["sh", "-c", "exec uvicorn main:app --host 0.0.0.0 --port ${PORT}"]
