@@ -3,7 +3,12 @@ resource "aws_lb" "main" {
   load_balancer_type = "application"
   subnets            = aws_subnet.public[*].id
   security_groups    = [aws_security_group.alb.id]
-  tags               = { Name = local.name }
+
+  # Drop requests with header names that are not valid HTTP, instead of passing them to the app,
+  # where a parser that reads them differently could be used for request smuggling.
+  drop_invalid_header_fields = true
+
+  tags = { Name = local.name }
 }
 
 resource "aws_lb_target_group" "app" {
