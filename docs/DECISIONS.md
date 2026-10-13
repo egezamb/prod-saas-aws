@@ -65,3 +65,18 @@ NAT gateway; VPC endpoints would remove this, at their own hourly cost).
 ### Remote state left to the user
 `versions.tf` ships the S3 backend commented out. State with secrets shouldn't
 live on one laptop; configure S3 + DynamoDB locking before using this for real.
+
+### Notes for running this for real
+- **Upgrading an older stack:** removing an inline `egress` block only stops
+  Terraform from managing it, so a stack created before the narrowed egress rules
+  keeps its old allow-all rule. Revoke it once per group:
+  `aws ec2 revoke-security-group-egress --group-id <sg> --ip-permissions IpProtocol=-1,IpRanges=[{CidrIp=0.0.0.0/0}]`.
+- **Rollback depth:** the ECR lifecycle policy keeps the last 10 images, so a
+  rollback by task definition revision reaches at most 10 deploys back.
+- **Final snapshot name:** with `db_protect = true` the final snapshot is
+  `<name>-final`; a second destroy needs that snapshot deleted or renamed first.
+- **Task definitions the deploy registered** stay in the account after
+  `terraform destroy`; they cost nothing.
+- **Before production:** ALB access logs and deletion protection, WAF, Multi-AZ
+  RDS, customer-managed KMS keys and longer log retention, all left out here for
+  cost and simplicity.
