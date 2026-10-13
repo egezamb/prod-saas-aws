@@ -20,13 +20,6 @@ resource "aws_security_group" "alb" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
   tags = { Name = "${local.name}-alb" }
 }
 
@@ -42,13 +35,6 @@ resource "aws_security_group" "ecs" {
     to_port         = var.container_port
     protocol        = "tcp"
     security_groups = [aws_security_group.alb.id]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
   }
 
   tags = { Name = "${local.name}-ecs" }
@@ -69,4 +55,37 @@ resource "aws_security_group" "rds" {
   }
 
   tags = { Name = "${local.name}-rds" }
+}
+
+# Egress is narrowed to what each tier needs. The rules are separate resources because the ALB and
+# ECS groups refer to each other, which inline rules cannot do without a cycle. Terraform removes
+# the allow-all egress rule AWS adds to a new group.
+
+resource "aws_vpc_security_group_egress_rule" "alb_to_ecs" {
+  security_group_id            = aws_security_group.alb.id
+  description                  = "To the ECS tasks, on the container port"
+  ip_protocol                  = "tcp"
+  from_port                    = var.container_port
+  to_port                      = var.container_port
+  referenced_security_group_id = aws_security_group.ecs.id
+}
+
+# HTTPS through the NAT gateway: ECR image pulls, Secrets Manager, CloudWatch Logs. An app that
+# calls other ports outside needs its own rule here.
+resource "aws_vpc_security_group_egress_rule" "ecs_https" {
+  security_group_id = aws_security_group.ecs.id
+  description       = "HTTPS to AWS APIs and the internet"
+  ip_protocol       = "tcp"
+  from_port         = 443
+  to_port           = 443
+  cidr_ipv4         = "0.0.0.0/0"
+}
+
+resource "aws_vpc_security_group_egress_rule" "ecs_to_rds" {
+  security_group_id            = aws_security_group.ecs.id
+  description                  = "Postgres on RDS"
+  ip_protocol                  = "tcp"
+  from_port                    = 5432
+  to_port                      = 5432
+  referenced_security_group_id = aws_security_group.rds.id
 }
