@@ -13,9 +13,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY main.py .
 
-# Run as a non-root user.
-RUN useradd -m appuser
-USER appuser
+# Run as a non-root user with a fixed numeric ID, so a runtime that checks "non-root" can tell
+# without reading /etc/passwd, and file ownership stays the same across rebuilds.
+RUN useradd --uid 10001 --no-create-home --shell /usr/sbin/nologin appuser
+USER 10001
 
 EXPOSE 8000
 # exec makes uvicorn PID 1, so the SIGTERM ECS sends on a deploy reaches it and it shuts down
