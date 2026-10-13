@@ -22,3 +22,8 @@ output "dashboard_url" {
   description = "CloudWatch dashboard."
   value       = "https://${var.region}.console.aws.amazon.com/cloudwatch/home?region=${var.region}#dashboards:name=${aws_cloudwatch_dashboard.main.dashboard_name}"
 }
+
+output "github_deploy_role_arn" {
+  description = "Set this as the AWS_ROLE_ARN secret of the GitHub repository to enable the deploy workflow."
+  value       = aws_iam_role.deploy.arn
+}
