@@ -12,6 +12,12 @@ on:
       - ".github/workflows/deploy.yml"
   workflow_dispatch:
 
+# OIDC: the job trades GitHub's token for short-lived AWS credentials. Without id-token: write the
+# role cannot be assumed, and with no stored AWS keys there is nothing else to fall back on.
+permissions:
+  contents: read
+  id-token: write
+
 concurrency:
   group: deploy-production
   cancel-in-progress: false
@@ -26,7 +32,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Check AWS credentials are configured
         id: creds
@@ -42,7 +50,7 @@ jobs:
 
       - name: Configure AWS credentials (OIDC)
         if: steps.creds.outputs.configured == 'true'
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -50,7 +58,7 @@ jobs:
       - name: Login to ECR
         if: steps.creds.outputs.configured == 'true'
         id: ecr
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2.1.7
 
       - name: Build, tag, and push image
         if: steps.creds.outputs.configured == 'true'
