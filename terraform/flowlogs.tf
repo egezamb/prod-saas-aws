@@ -21,6 +21,11 @@ data "aws_iam_policy_document" "flow_logs_assume" {
       variable = "aws:SourceAccount"
       values   = [data.aws_caller_identity.current.account_id]
     }
+    condition {
+      test     = "ArnLike"
+      variable = "aws:SourceArn"
+      values   = ["arn:aws:ec2:${var.region}:${data.aws_caller_identity.current.account_id}:vpc-flow-log/*"]
+    }
   }
 }
 
@@ -33,6 +38,12 @@ data "aws_iam_policy_document" "flow_logs_write" {
   statement {
     actions   = ["logs:CreateLogStream", "logs:PutLogEvents", "logs:DescribeLogStreams"]
     resources = ["${aws_cloudwatch_log_group.flow_logs.arn}:*"]
+  }
+
+  # In the documented minimum for flow logs; a list call with no resource-level permissions.
+  statement {
+    actions   = ["logs:DescribeLogGroups"]
+    resources = ["*"]
   }
 }
 
