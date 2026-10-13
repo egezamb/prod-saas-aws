@@ -15,6 +15,11 @@ resource "aws_db_instance" "main" {
   storage_type          = "gp3"
   storage_encrypted     = true
 
+  # Lets the app or an operator sign in with a short-lived IAM token instead of the stored password
+  # (rds-db:connect). The password keeps working, so nothing breaks while callers move over.
+  iam_database_authentication_enabled = true
+  copy_tags_to_snapshot               = true
+
   db_name  = var.db_name
   username = var.db_username
   password = random_password.db.result
