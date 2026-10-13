@@ -90,3 +90,10 @@ resource "aws_vpc_security_group_egress_rule" "ecs_to_rds" {
   to_port                      = 5432
   referenced_security_group_id = aws_security_group.rds.id
 }
+
+# The VPC's default security group, managed with no rules: anything launched into it by mistake gets
+# no traffic at all, instead of the default "members talk to each other, anything goes out".
+resource "aws_default_security_group" "default" {
+  vpc_id = aws_vpc.main.id
+  tags   = { Name = "${local.name}-default-closed" }
+}
