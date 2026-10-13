@@ -22,13 +22,14 @@ resource "aws_internet_gateway" "main" {
   tags   = { Name = local.name }
 }
 
-# Public subnets — ALB lives here.
+# Public subnets — ALB lives here. Nothing in them needs an automatic public IP: the ALB gets its own
+# addresses and the NAT gateway its Elastic IP, so a stray instance launched here stays private.
 resource "aws_subnet" "public" {
   count                   = var.az_count
   vpc_id                  = aws_vpc.main.id
   cidr_block              = local.public_subnets[count.index]
   availability_zone       = local.azs[count.index]
-  map_public_ip_on_launch = true
+  map_public_ip_on_launch = false
   tags                    = { Name = "${local.name}-public-${count.index}", Tier = "public" }
 }
 
