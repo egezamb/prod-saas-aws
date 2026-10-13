@@ -67,10 +67,15 @@ jobs:
         env:
           REGISTRY: ${{ steps.ecr.outputs.registry }}
         run: |
-          # The repository's tags are immutable: one tag per commit, never :latest again.
+          # The repository's tags are immutable: one tag per commit, never :latest again. A rerun of
+          # the same commit reuses its image, since a rebuild has a new digest and could not be pushed.
           IMAGE="$REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA"
-          docker build -t "$IMAGE" ./app
-          docker push "$IMAGE"
+          if aws ecr describe-images --repository-name "$ECR_REPOSITORY" --image-ids imageTag="$GITHUB_SHA" >/dev/null 2>&1; then
+            echo "The image for $GITHUB_SHA is already in ECR; reusing it."
+          else
+            docker build -t "$IMAGE" ./app
+            docker push "$IMAGE"
+          fi
           echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
 
       # A new task definition revision with only the image changed, so CPU, memory, secrets and
