@@ -37,10 +37,25 @@ The service scales 2→6 tasks to hold CPU near 60%. Simple, predictable, and th
 most common starting policy. Request-count-per-target is the next step if the
 workload is I/O-bound rather than CPU-bound.
 
-### Single-AZ RDS, `skip_final_snapshot`, no deletion protection
-Deliberately **not** production-hardened, so it's cheap to spin up and tear down
-while learning. Each of these has an inline comment in `rds.tf` telling you to
-flip it for real production (Multi-AZ, final snapshot, deletion protection).
+### Single-AZ RDS, safeguards behind `db_protect`
+Deliberately **not** production-hardened by default, so it's cheap to spin up and
+tear down while learning. `db_protect = true` turns on deletion protection and a
+final snapshot together; Multi-AZ stays an inline flip in `rds.tf`. IAM token
+sign-in is on, next to the password, so callers can move to short-lived tokens.
+
+### Immutable image tags, and the first apply
+ECR tags are immutable, so every running image traces back to one commit and
+nothing can be pushed over it. Deploys push the commit SHA and register a new
+task definition revision; the ECS service ignores `task_definition` changes so
+`terraform apply` never rolls a deploy back. The very first apply needs an image
+that exists: push one `:latest` by hand before it (or set `container_image`).
+
+### Accepted scanner findings
+`trivy config` runs in CI. Three findings are accepted on purpose and listed in
+`.trivyignore` with their reason: the ALB is public (it is the front door), HTTP
+is served when no `certificate_arn` is given (TLS is optional for a demo), and
+tasks may reach any host on 443 (ECR, Secrets Manager and CloudWatch through the
+NAT gateway; VPC endpoints would remove this, at their own hourly cost).
 
 ### Remote state left to the user
 `versions.tf` ships the S3 backend commented out. State with secrets shouldn't

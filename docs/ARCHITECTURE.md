@@ -36,9 +36,15 @@ is open to `0.0.0.0/0` except the ALB.
 ## Deploy flow (CI/CD)
 
 - **PR** → `terraform fmt/validate` + app tests + docker build (CI).
-- **Merge to main** (app changes) → build image, push to ECR, `ecs update-service
-  --force-new-deployment` (CD, via GitHub OIDC — no static AWS keys). Skips
-  cleanly if `AWS_ROLE_ARN` isn't set.
+- **Merge to main** (app changes) → build the image, push it to ECR tagged with
+  the commit SHA (tags are immutable), register a task definition revision with
+  only the image changed, point the service at it, and wait until the service is
+  stable. Rolling back is pointing the service at an earlier revision.
+- **Credentials:** GitHub OIDC into the `github-deploy` role from `github.tf`
+  (output `github_deploy_role_arn` → repository secret `AWS_ROLE_ARN`). Only
+  `main` of this repository can assume it, and it can only push to this ECR
+  repository, register task definitions and roll this service. No static AWS
+  keys. The workflow skips cleanly while `AWS_ROLE_ARN` isn't set.
 
 ## HA and scaling posture
 
