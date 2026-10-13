@@ -74,6 +74,13 @@ resource "aws_ecs_service" "app" {
   # Let deploys settle before the ALB fails health checks.
   health_check_grace_period_seconds = 60
 
+  # A deploy whose tasks keep failing stops on its own and rolls back to the last working revision,
+  # instead of replacing healthy tasks with crashing ones until someone notices.
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
+  }
+
   # The deploy workflow registers a new task definition revision for every image. Terraform must
   # not roll the service back to its own revision on the next apply.
   lifecycle {
