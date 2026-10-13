@@ -16,7 +16,8 @@ resource "aws_db_instance" "main" {
   storage_encrypted     = true
 
   # Lets the app or an operator sign in with a short-lived IAM token instead of the stored password
-  # (rds-db:connect). The password keeps working, so nothing breaks while callers move over.
+  # (rds-db:connect). Nothing changes until a database user is granted rds_iam; that user then
+  # signs in with tokens only, so move callers over one user at a time.
   iam_database_authentication_enabled = true
   copy_tags_to_snapshot               = true
 
