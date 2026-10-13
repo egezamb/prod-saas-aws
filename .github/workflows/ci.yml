@@ -43,7 +43,9 @@ jobs:
           echo "c6e65abddb348e25f10549df887045629cf28cc72453cd1c63acb717316b3f3f  trivy.tgz" | sha256sum -c -
           tar xzf trivy.tgz trivy
       # Accepted findings are marked with a trivy:ignore comment on the resource, with the reason.
-      - run: ./trivy config --severity HIGH,CRITICAL --exit-code 1 .
+      # --skip-check-update: use the checks bundled with this trivy version, so a rule published
+      # upstream cannot fail CI without a change here; a trivy bump brings new checks on purpose.
+      - run: ./trivy config --skip-check-update --severity HIGH,CRITICAL --exit-code 1 .
 
   app:
     name: App (test + docker build)
