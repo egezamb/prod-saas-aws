@@ -1,6 +1,9 @@
 resource "aws_ecr_repository" "app" {
-  name                 = local.name
-  image_tag_mutability = "MUTABLE"
+  name = local.name
+  # A tag names one image forever, so a deployed version can always be traced to its commit and
+  # nothing can be pushed over it. Deploys push the commit SHA; :latest is pushed once, by hand,
+  # for the first apply (see docs/DECISIONS.md).
+  image_tag_mutability = "IMMUTABLE"
 
   image_scanning_configuration {
     scan_on_push = true
