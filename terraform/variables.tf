@@ -118,3 +118,15 @@ variable "db_protect" {
   type        = bool
   default     = false
 }
+
+variable "github_repository" {
+  description = "owner/name of the GitHub repository whose deploy workflow may assume the deploy role."
+  type        = string
+  default     = "egezamb/prod-saas-aws"
+}
+
+variable "create_github_oidc_provider" {
+  description = "Create the account's GitHub Actions OIDC provider. Set false if the account already has one (there can be only one per URL)."
+  type        = bool
+  default     = true
+}
