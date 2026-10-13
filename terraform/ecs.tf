@@ -23,6 +23,9 @@ resource "aws_ecs_task_definition" "app" {
       name      = "app"
       image     = local.app_image
       essential = true
+      # The app writes nothing to disk (PYTHONDONTWRITEBYTECODE is set in the image), so its
+      # filesystem can be read-only: code that gets in cannot change the app or drop tools.
+      readonlyRootFilesystem = true
       portMappings = [{
         containerPort = var.container_port
         protocol      = "tcp"
