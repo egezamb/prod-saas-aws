@@ -60,21 +60,43 @@ jobs:
         id: ecr
         uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2.1.7
 
-      - name: Build, tag, and push image
+      - name: Build and push the image, tagged with the commit
         if: steps.creds.outputs.configured == 'true'
+        id: image
         env:
           REGISTRY: ${{ steps.ecr.outputs.registry }}
         run: |
-          IMAGE="$REGISTRY/${ECR_REPOSITORY}:${GITHUB_SHA::7}"
-          docker build -t "$IMAGE" -t "$REGISTRY/${ECR_REPOSITORY}:latest" ./app
+          # The repository's tags are immutable: one tag per commit, never :latest again.
+          IMAGE="$REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA"
+          docker build -t "$IMAGE" ./app
           docker push "$IMAGE"
-          docker push "$REGISTRY/${ECR_REPOSITORY}:latest"
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
 
-      - name: Roll the ECS service
+      # A new task definition revision with only the image changed, so CPU, memory, secrets and
+      # roles stay what Terraform set. Rolling back is pointing the service at an older revision.
+      - name: Register a task definition revision with the new image
         if: steps.creds.outputs.configured == 'true'
+        id: taskdef
+        env:
+          IMAGE: ${{ steps.image.outputs.image }}
         run: |
-          aws ecs update-service \
-            --cluster "$ECS_CLUSTER" \
-            --service "$ECS_SERVICE" \
-            --force-new-deployment >/dev/null
-          echo "Triggered a new deployment of $ECS_SERVICE."
+          current=$(aws ecs describe-services --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE" \
+            --query 'services[0].taskDefinition' --output text)
+          aws ecs describe-task-definition --task-definition "$current" --query taskDefinition \
+            | jq --arg image "$IMAGE" '.containerDefinitions |= map(if .name == "app" then .image = $image else . end)
+                | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
+            > taskdef.json
+          arn=$(aws ecs register-task-definition --cli-input-json file://taskdef.json \
+            --query 'taskDefinition.taskDefinitionArn' --output text)
+          echo "arn=$arn" >> "$GITHUB_OUTPUT"
+
+      - name: Roll the ECS service and wait until it is stable
+        if: steps.creds.outputs.configured == 'true'
+        env:
+          TASKDEF: ${{ steps.taskdef.outputs.arn }}
+        run: |
+          aws ecs update-service --cluster "$ECS_CLUSTER" --service "$ECS_SERVICE" \
+            --task-definition "$TASKDEF" >/dev/null
+          # Fails the job if the new tasks do not become healthy (about 10 minutes).
+          aws ecs wait services-stable --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE"
+          echo "Deployed $TASKDEF to $ECS_SERVICE."
