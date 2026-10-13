@@ -27,6 +27,7 @@ env:
   ECR_REPOSITORY: prod-saas-prod
   ECS_CLUSTER: prod-saas-prod
   ECS_SERVICE: prod-saas-prod
+  TASK_FAMILY: prod-saas-prod
 
 jobs:
   deploy:
@@ -80,11 +81,12 @@ jobs:
         env:
           IMAGE: ${{ steps.image.outputs.image }}
         run: |
-          current=$(aws ecs describe-services --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE" \
-            --query 'services[0].taskDefinition' --output text)
-          aws ecs describe-task-definition --task-definition "$current" --query taskDefinition \
+          # The family's latest revision, not the one the service runs: it carries the newest settings
+          # Terraform applied (CPU, env, secrets), which the service would otherwise never pick up.
+          aws ecs describe-task-definition --task-definition "$TASK_FAMILY" --query taskDefinition \
             | jq --arg image "$IMAGE" '.containerDefinitions |= map(if .name == "app" then .image = $image else . end)
-                | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
+                | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities,
+                      .registeredAt, .registeredBy, .deregisteredAt)' \
             > taskdef.json
           arn=$(aws ecs register-task-definition --cli-input-json file://taskdef.json \
             --query 'taskDefinition.taskDefinitionArn' --output text)
