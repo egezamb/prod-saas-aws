@@ -72,6 +72,7 @@ resource "aws_vpc_security_group_egress_rule" "alb_to_ecs" {
 
 # HTTPS through the NAT gateway: ECR image pulls, Secrets Manager, CloudWatch Logs. An app that
 # calls other ports outside needs its own rule here.
+# trivy:ignore:AWS-0104 ECR, Secrets Manager and CloudWatch through the NAT gateway (no VPC endpoints).
 resource "aws_vpc_security_group_egress_rule" "ecs_https" {
   security_group_id = aws_security_group.ecs.id
   description       = "HTTPS to AWS APIs and the internet"
