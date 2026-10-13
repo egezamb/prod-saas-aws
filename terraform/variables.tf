@@ -101,3 +101,14 @@ variable "db_username" {
   default     = "app"
   description = "Master DB username."
 }
+
+variable "flow_log_traffic_type" {
+  description = "Which VPC traffic the flow logs record: REJECT (cheapest; shows blocked and probing traffic), ACCEPT or ALL."
+  type        = string
+  default     = "REJECT"
+
+  validation {
+    condition     = contains(["REJECT", "ACCEPT", "ALL"], var.flow_log_traffic_type)
+    error_message = "flow_log_traffic_type must be REJECT, ACCEPT or ALL."
+  }
+}
