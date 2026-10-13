@@ -5,7 +5,7 @@
 *.tfvars
 !*.tfvars.example
 crash.log
-.terraform.lock.hcl
+# .terraform.lock.hcl is committed, so every machine and CI use the same provider builds.
 
 # Python
 __pycache__/
