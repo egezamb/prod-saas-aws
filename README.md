@@ -79,9 +79,14 @@ docker build -t "$(cd ../terraform && terraform output -raw ecr_repository_url):
 docker push "$(cd ../terraform && terraform output -raw ecr_repository_url):latest"
 
 cd ../terraform
-terraform apply                      # ECS picks up the image
-terraform output app_url             # open it
+# The first deployment found no image and stopped (the circuit breaker has nothing to roll back to),
+# so start a new one now that the image exists.
+aws ecs update-service --cluster prod-saas-prod --service prod-saas-prod --force-new-deployment
+terraform output app_url             # open it once the service is stable
 ```
+
+From then on, deploys go through GitHub Actions: set the `github_deploy_role_arn` output as the
+repository secret `AWS_ROLE_ARN`, and every merge to `main` that changes `app/` ships a new image.
 
 TLS is optional: set `-var certificate_arn=<acm-arn>` and the ALB serves HTTPS and
 redirects HTTP→HTTPS. Leave it empty for plain HTTP (fine for a demo).

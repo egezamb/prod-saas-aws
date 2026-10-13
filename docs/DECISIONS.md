@@ -47,8 +47,12 @@ sign-in is on, next to the password, so callers can move to short-lived tokens.
 ECR tags are immutable, so every running image traces back to one commit and
 nothing can be pushed over it. Deploys push the commit SHA and register a new
 task definition revision; the ECS service ignores `task_definition` changes so
-`terraform apply` never rolls a deploy back. The very first apply needs an image
-that exists: push one `:latest` by hand before it (or set `container_image`).
+`terraform apply` never rolls a deploy back. The very first apply creates the
+ECR repository, so there is no image yet and that first deployment stops: push
+`:latest` once by hand, then start a new deployment (`aws ecs update-service
+--force-new-deployment`, or run the Deploy workflow). A changed task setting in
+Terraform (CPU, env, secrets) reaches the service with the next deploy, which
+bases its revision on the family's latest one.
 
 ### Accepted scanner findings
 `trivy config` runs in CI. Three findings are accepted on purpose and listed in
