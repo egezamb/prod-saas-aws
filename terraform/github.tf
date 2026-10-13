@@ -47,3 +47,58 @@ resource "aws_iam_role" "deploy" {
   max_session_duration = 3600
   tags                 = { Name = "${local.name}-github-deploy" }
 }
+
+# Exactly what .github/workflows/deploy.yml calls, on this stack's resources only.
+data "aws_iam_policy_document" "deploy" {
+  # GetAuthorizationToken has no resource-level permissions.
+  statement {
+    sid       = "EcrLogin"
+    actions   = ["ecr:GetAuthorizationToken"]
+    resources = ["*"]
+  }
+
+  statement {
+    sid = "EcrPush"
+    actions = [
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:InitiateLayerUpload",
+      "ecr:UploadLayerPart",
+      "ecr:CompleteLayerUpload",
+      "ecr:PutImage",
+      "ecr:BatchGetImage",
+    ]
+    resources = [aws_ecr_repository.app.arn]
+  }
+
+  statement {
+    sid       = "EcsService"
+    actions   = ["ecs:DescribeServices", "ecs:UpdateService"]
+    resources = [aws_ecs_service.app.id]
+  }
+
+  # Task definition reads and registrations have no resource-level permissions.
+  statement {
+    sid       = "EcsTaskDefinitions"
+    actions   = ["ecs:DescribeTaskDefinition", "ecs:RegisterTaskDefinition"]
+    resources = ["*"]
+  }
+
+  # A new revision names the same execution and task roles, so the deployer must be able to pass
+  # them, and only to ECS tasks.
+  statement {
+    sid       = "PassTaskRoles"
+    actions   = ["iam:PassRole"]
+    resources = [aws_iam_role.execution.arn, aws_iam_role.task.arn]
+    condition {
+      test     = "StringEquals"
+      variable = "iam:PassedToService"
+      values   = ["ecs-tasks.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role_policy" "deploy" {
+  name   = "deploy"
+  role   = aws_iam_role.deploy.id
+  policy = data.aws_iam_policy_document.deploy.json
+}
