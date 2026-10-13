@@ -71,6 +71,12 @@ resource "aws_ecs_service" "app" {
   # Let deploys settle before the ALB fails health checks.
   health_check_grace_period_seconds = 60
 
+  # The deploy workflow registers a new task definition revision for every image. Terraform must
+  # not roll the service back to its own revision on the next apply.
+  lifecycle {
+    ignore_changes = [task_definition]
+  }
+
   depends_on = [aws_lb_listener.http]
 
   tags = { Name = local.name }
