@@ -66,6 +66,7 @@ data "aws_iam_policy_document" "deploy" {
       "ecr:CompleteLayerUpload",
       "ecr:PutImage",
       "ecr:BatchGetImage",
+      "ecr:DescribeImages", # a rerun of the same commit reuses its image
     ]
     resources = [aws_ecr_repository.app.arn]
   }
