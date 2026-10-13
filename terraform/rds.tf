@@ -29,9 +29,11 @@ resource "aws_db_instance" "main" {
   multi_az               = false # single-AZ to keep cost down; flip to true for real prod HA
 
   backup_retention_period = 7
-  deletion_protection     = false # set true for real prod
-  skip_final_snapshot     = true  # set false for real prod
-  apply_immediately       = true
+  # One switch for real production: refuse deletes, and keep a final snapshot if it is deleted anyway.
+  deletion_protection       = var.db_protect
+  skip_final_snapshot       = !var.db_protect
+  final_snapshot_identifier = var.db_protect ? "${local.name}-final" : null
+  apply_immediately         = true
 
   tags = { Name = local.name }
 }

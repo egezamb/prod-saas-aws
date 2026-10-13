@@ -112,3 +112,9 @@ variable "flow_log_traffic_type" {
     error_message = "flow_log_traffic_type must be REJECT, ACCEPT or ALL."
   }
 }
+
+variable "db_protect" {
+  description = "Production safeguards for RDS: deletion protection and a final snapshot. Off by default so a demo stack can be destroyed in one step."
+  type        = bool
+  default     = false
+}
