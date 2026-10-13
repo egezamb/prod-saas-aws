@@ -28,6 +28,23 @@ jobs:
       - run: terraform init -backend=false
       - run: terraform validate
 
+  iac-scan:
+    name: IaC scan (trivy config)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Downloaded by version and checked against the release's checksum, not through a wrapper
+      # action, so the scanner that runs is exactly the one named here.
+      - name: Install trivy
+        run: |
+          curl -sSLo trivy.tgz https://github.com/aquasecurity/trivy/releases/download/v0.75.0/trivy_0.75.0_Linux-64bit.tar.gz
+          echo "c6e65abddb348e25f10549df887045629cf28cc72453cd1c63acb717316b3f3f  trivy.tgz" | sha256sum -c -
+          tar xzf trivy.tgz trivy
+      # Accepted findings are listed, with their reason, in .trivyignore.yaml.
+      - run: ./trivy config --ignorefile .trivyignore.yaml --severity HIGH,CRITICAL --exit-code 1 .
+
   app:
     name: App (test + docker build)
     runs-on: ubuntu-latest
