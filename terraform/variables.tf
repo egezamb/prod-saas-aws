@@ -119,6 +119,17 @@ variable "db_protect" {
   default     = false
 }
 
+variable "requests_per_target" {
+  description = "Opt-in request-count autoscaling: target ALB requests per task per minute. 0 (default) keeps CPU-only scaling; set >0 for an I/O-bound workload, so the service also scales to hold this many requests per task."
+  type        = number
+  default     = 0
+
+  validation {
+    condition     = var.requests_per_target >= 0
+    error_message = "requests_per_target must be 0 (disabled) or a positive number of requests per task."
+  }
+}
+
 variable "github_repository" {
   description = "owner/name of the GitHub repository whose deploy workflow may assume the deploy role."
   type        = string
