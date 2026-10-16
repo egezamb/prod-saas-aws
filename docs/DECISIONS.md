@@ -34,8 +34,10 @@ sets the cert.
 
 ### Target-tracking autoscaling on CPU
 The service scales 2→6 tasks to hold CPU near 60%. Simple, predictable, and the
-most common starting policy. Request-count-per-target is the next step if the
-workload is I/O-bound rather than CPU-bound.
+most common starting policy. For an I/O-bound workload that stays under the CPU
+target, set `requests_per_target` to the ALB requests-per-task you want to hold:
+a second target-tracking policy is added alongside CPU, and autoscaling takes the
+higher desired count of the two. It stays off (0) by default.
 
 ### Single-AZ RDS, safeguards behind `db_protect`
 Deliberately **not** production-hardened by default, so it's cheap to spin up and

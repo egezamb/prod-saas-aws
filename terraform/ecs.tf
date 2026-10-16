@@ -117,3 +117,26 @@ resource "aws_appautoscaling_policy" "cpu" {
     scale_out_cooldown = 60
   }
 }
+
+# Opt-in: also scale on ALB requests per task, for an I/O-bound workload that stays under the CPU
+# target. Both policies drive the same scalable target; autoscaling takes the higher desired count,
+# so the service scales on whichever pressure is greater. The resource label ties the metric to this
+# ALB and target group (app/<lb>/<id>/targetgroup/<tg>/<id>).
+resource "aws_appautoscaling_policy" "requests" {
+  count              = var.requests_per_target > 0 ? 1 : 0
+  name               = "${local.name}-requests"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.ecs.resource_id
+  scalable_dimension = aws_appautoscaling_target.ecs.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.ecs.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ALBRequestCountPerTarget"
+      resource_label         = "${aws_lb.main.arn_suffix}/${aws_lb_target_group.app.arn_suffix}"
+    }
+    target_value       = var.requests_per_target
+    scale_in_cooldown  = 120
+    scale_out_cooldown = 60
+  }
+}
