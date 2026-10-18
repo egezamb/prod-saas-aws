@@ -12,7 +12,14 @@ terraform {
     }
   }
 
-  # Remote state is intentionally left to the user — uncomment and configure an
-  # S3 backend (with DynamoDB locking) before using this beyond a single machine.
-  # backend "s3" {}
+  # Remote state is left to the user. Before using this beyond one machine, keep it in S3
+  # (docs/DECISIONS.md). S3 locks the state itself with use_lockfile (generally available since
+  # Terraform 1.11), so no DynamoDB table is needed:
+  # backend "s3" {
+  #   bucket       = "<your-state-bucket>"
+  #   key          = "prod-saas-aws/terraform.tfstate"
+  #   region       = "eu-central-1"
+  #   encrypt      = true
+  #   use_lockfile = true
+  # }
 }

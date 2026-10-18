@@ -65,8 +65,15 @@ tasks may reach any host on 443 (ECR, Secrets Manager and CloudWatch through the
 NAT gateway; VPC endpoints would remove this, at their own hourly cost).
 
 ### Remote state left to the user
-`versions.tf` ships the S3 backend commented out. State with secrets shouldn't
-live on one laptop; configure S3 + DynamoDB locking before using this for real.
+`versions.tf` ships the S3 backend commented out. The state holds the generated
+database password, so it shouldn't live on one laptop. Before using this for real:
+
+- **A bucket for state only:** versioning on (so a bad apply can be rolled back),
+  public access blocked, and encrypted.
+- **`use_lockfile = true`:** the S3 backend locks the state with a lock object in
+  the bucket. It came in Terraform 1.10 and is generally available since 1.11, which
+  also deprecated the DynamoDB locking arguments.
+- **`terraform init -migrate-state`** moves an existing local state into the bucket.
 
 ### Notes for running this for real
 - **Upgrading an older stack:** removing an inline `egress` block only stops
