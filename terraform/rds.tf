@@ -27,6 +27,7 @@ resource "aws_db_instance" "main" {
 
   db_subnet_group_name   = aws_db_subnet_group.main.name
   vpc_security_group_ids = [aws_security_group.rds.id]
+  publicly_accessible    = false # private subnets only; said explicitly, not left to the API default
   multi_az               = false # single-AZ to keep cost down; flip to true for real prod HA
 
   backup_retention_period = 7

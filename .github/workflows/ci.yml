@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   terraform:
-    name: Terraform (fmt + validate)
+    name: Terraform (fmt + validate + test)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -27,6 +27,8 @@ jobs:
       - run: terraform fmt -check -recursive
       - run: terraform init -backend=false
       - run: terraform validate
+      # Plan-only tests with mocked providers (terraform/tests): no AWS credentials needed
+      - run: terraform test
 
   iac-scan:
     name: IaC scan (trivy config)
