@@ -63,3 +63,48 @@ run "db_protect_refuses_deletes_and_keeps_a_final_snapshot" {
     error_message = "db_protect must turn on deletion protection and the final snapshot."
   }
 }
+
+run "waf_is_off_by_default" {
+  command = plan
+
+  assert {
+    condition     = length(aws_wafv2_web_acl.main) == 0 && length(aws_wafv2_web_acl_association.alb) == 0
+    error_message = "No web ACL unless enable_waf is set."
+  }
+}
+
+run "enable_waf_puts_a_web_acl_in_front_of_the_alb" {
+  command = plan
+
+  variables {
+    enable_waf     = true
+    waf_rate_limit = 500
+  }
+
+  assert {
+    condition     = length(aws_wafv2_web_acl.main) == 1 && length(aws_wafv2_web_acl_association.alb) == 1
+    error_message = "enable_waf must create the web ACL and attach it to the ALB."
+  }
+  assert {
+    condition     = aws_wafv2_web_acl.main[0].scope == "REGIONAL" && length(aws_wafv2_web_acl.main[0].rule) == 4
+    error_message = "The web ACL must be regional (an ALB) with the three managed rule groups and the rate limit."
+  }
+  assert {
+    condition = anytrue([
+      for r in aws_wafv2_web_acl.main[0].rule :
+      length(r.statement[0].rate_based_statement) == 1 && r.statement[0].rate_based_statement[0].limit == 500
+    ])
+    error_message = "The rate-based rule must use waf_rate_limit."
+  }
+}
+
+run "waf_rate_limit_below_the_aws_minimum_is_refused" {
+  command = plan
+
+  variables {
+    enable_waf     = true
+    waf_rate_limit = 5
+  }
+
+  expect_failures = [var.waf_rate_limit]
+}

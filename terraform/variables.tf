@@ -125,6 +125,23 @@ variable "db_multi_az" {
   default     = false
 }
 
+variable "enable_waf" {
+  description = "Put an AWS WAF web ACL in front of the ALB: AWS's managed rules for common attacks, bad inputs and bad-reputation IPs, plus a per-IP rate limit (waf.tf). Costs about $5 a month, plus $1 per rule and $0.60 per million requests."
+  type        = bool
+  default     = false
+}
+
+variable "waf_rate_limit" {
+  description = "Requests one IP may send in 5 minutes before WAF blocks it (with enable_waf)."
+  type        = number
+  default     = 1000
+
+  validation {
+    condition     = var.waf_rate_limit >= 10 && var.waf_rate_limit <= 2000000000
+    error_message = "AWS WAF accepts a rate limit from 10 to 2,000,000,000 requests per 5 minutes."
+  }
+}
+
 variable "requests_per_target" {
   description = "Opt-in request-count autoscaling: target ALB requests per task per minute. 0 (default) keeps CPU-only scaling; set >0 for an I/O-bound workload, so the service also scales to hold this many requests per task."
   type        = number
