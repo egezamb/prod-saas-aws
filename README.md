@@ -113,8 +113,13 @@ prod-saas-aws/
 ## Not production-hardened out of the box
 
 This is a **reference** — clear over maximal. Before real production, turn on:
-Multi-AZ RDS, `deletion_protection`, remote state (S3 + DynamoDB lock), WAF on the
-ALB, and per-environment workspaces. Each is called out inline in the Terraform.
+
+- `db_multi_az` and `db_protect` for RDS (a standby in a second AZ; deletion protection and a final snapshot);
+- `enable_waf` for AWS WAF in front of the ALB;
+- remote state in S3 with `use_lockfile` (see [Decisions](docs/DECISIONS.md));
+- per-environment workspaces.
+
+`terraform test` (mocked providers, no AWS account) checks what each switch does.
 
 ## License
 
