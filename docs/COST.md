@@ -8,7 +8,7 @@ by region and change over time — treat it as an order of magnitude, not a quot
 |---|---:|---:|---|
 | **NAT Gateway** | 1 × | **~$32** + data | The biggest line item. Bills hourly even at zero traffic. |
 | **Application Load Balancer** | 1 × | **~$16** + LCU | Also hourly, always-on. |
-| **RDS PostgreSQL** | `db.t4g.micro`, 20 GB gp3, single-AZ | **~$13** | Graviton, cheapest sane option. |
+| **RDS PostgreSQL** | `db.t4g.micro`, 20 GB gp3, single-AZ | **~$13** | Graviton, cheapest sane option. `db_multi_az = true` adds a standby in a second AZ and roughly doubles this line. |
 | **ECS Fargate** | 2 tasks × 0.25 vCPU / 0.5 GB | **~$13** | Scales up under load (2→6). |
 | **ECR / SSM / CloudWatch / logs** | — | **~$2–5** | Storage + a few metrics/alarms. |
 | **Total** | | **≈ $75–80 / month** | Dominated by NAT + ALB (~$48 of it). |
