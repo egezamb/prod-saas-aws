@@ -119,6 +119,12 @@ variable "db_protect" {
   default     = false
 }
 
+variable "db_multi_az" {
+  description = "Run RDS with a standby in a second AZ, which takes over on its own if the primary or its AZ fails. Roughly doubles the RDS cost (instance and storage), so off for the demo stack."
+  type        = bool
+  default     = false
+}
+
 variable "requests_per_target" {
   description = "Opt-in request-count autoscaling: target ALB requests per task per minute. 0 (default) keeps CPU-only scaling; set >0 for an I/O-bound workload, so the service also scales to hold this many requests per task."
   type        = number
