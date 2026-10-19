@@ -27,3 +27,8 @@ output "github_deploy_role_arn" {
   description = "Set this as the AWS_ROLE_ARN secret of the GitHub repository to enable the deploy workflow."
   value       = aws_iam_role.deploy.arn
 }
+
+output "alarm_topic_arn" {
+  description = "SNS topic the alarms publish to: subscribe email, Slack (AWS Chatbot) or a pager here."
+  value       = aws_sns_topic.alarms.arn
+}

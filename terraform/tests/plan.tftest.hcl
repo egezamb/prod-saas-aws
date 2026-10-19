@@ -132,3 +132,51 @@ run "no_healthy_target_alarms_without_traffic" {
     error_message = "No healthy target must alarm, and a missing data point (nothing registered) must count as down."
   }
 }
+
+run "every_alarm_notifies_the_topic_and_back_to_ok" {
+  command = plan
+
+  assert {
+    condition = alltrue([
+      for a in [
+        aws_cloudwatch_metric_alarm.alb_5xx,
+        aws_cloudwatch_metric_alarm.alb_elb_5xx,
+        aws_cloudwatch_metric_alarm.no_healthy_targets,
+        aws_cloudwatch_metric_alarm.ecs_cpu,
+        aws_cloudwatch_metric_alarm.rds_storage,
+      ] : length(a.alarm_actions) == 1 && length(a.ok_actions) == 1
+    ])
+    error_message = "Every alarm must publish to the alarm topic when it fires and when it clears."
+  }
+  assert {
+    condition     = aws_kms_key.alarms.enable_key_rotation && length(aws_sns_topic_subscription.alarm_email) == 0
+    error_message = "The topic's key must rotate, and no subscriber is created without alarm_email."
+  }
+}
+
+run "alarm_email_subscribes_to_the_topic" {
+  command = plan
+
+  variables {
+    alarm_email = "oncall@example.com"
+  }
+
+  assert {
+    condition = (
+      length(aws_sns_topic_subscription.alarm_email) == 1 &&
+      aws_sns_topic_subscription.alarm_email[0].protocol == "email" &&
+      aws_sns_topic_subscription.alarm_email[0].endpoint == "oncall@example.com"
+    )
+    error_message = "alarm_email must subscribe that address to the alarm topic."
+  }
+}
+
+run "alarm_email_that_is_not_an_address_is_refused" {
+  command = plan
+
+  variables {
+    alarm_email = "oncall"
+  }
+
+  expect_failures = [var.alarm_email]
+}

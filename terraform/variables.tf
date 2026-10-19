@@ -164,3 +164,14 @@ variable "create_github_oidc_provider" {
   type        = bool
   default     = true
 }
+
+variable "alarm_email" {
+  description = "Email address subscribed to the alarm topic. SNS sends a confirmation link first. Empty (default) creates the topic without a subscriber; attach one later through the alarm_topic_arn output."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = var.alarm_email == "" || can(regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", var.alarm_email))
+    error_message = "alarm_email must be empty or an email address."
+  }
+}

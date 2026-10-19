@@ -18,6 +18,8 @@ resource "aws_cloudwatch_metric_alarm" "alb_5xx" {
   threshold           = 5
   treat_missing_data  = "notBreaching"
   alarm_description   = "App returned >5 HTTP 5xx in a minute"
+  alarm_actions       = [aws_sns_topic.alarms.arn]
+  ok_actions          = [aws_sns_topic.alarms.arn]
   dimensions = {
     LoadBalancer = aws_lb.main.arn_suffix
   }
@@ -38,6 +40,8 @@ resource "aws_cloudwatch_metric_alarm" "alb_elb_5xx" {
   threshold           = 5
   treat_missing_data  = "notBreaching"
   alarm_description   = "The ALB returned >5 of its own 5xx (502/503/504) in a minute: tasks are down or not answering"
+  alarm_actions       = [aws_sns_topic.alarms.arn]
+  ok_actions          = [aws_sns_topic.alarms.arn]
   dimensions = {
     LoadBalancer = aws_lb.main.arn_suffix
   }
@@ -59,6 +63,8 @@ resource "aws_cloudwatch_metric_alarm" "no_healthy_targets" {
   threshold           = 1
   treat_missing_data  = "breaching"
   alarm_description   = "No healthy ECS task behind the ALB for 2 minutes"
+  alarm_actions       = [aws_sns_topic.alarms.arn]
+  ok_actions          = [aws_sns_topic.alarms.arn]
   dimensions = {
     LoadBalancer = aws_lb.main.arn_suffix
     TargetGroup  = aws_lb_target_group.app.arn_suffix
@@ -78,6 +84,8 @@ resource "aws_cloudwatch_metric_alarm" "ecs_cpu" {
   threshold           = 80
   treat_missing_data  = "notBreaching"
   alarm_description   = "ECS service CPU >80% for 3 minutes"
+  alarm_actions       = [aws_sns_topic.alarms.arn]
+  ok_actions          = [aws_sns_topic.alarms.arn]
   dimensions = {
     ClusterName = aws_ecs_cluster.main.name
     ServiceName = aws_ecs_service.app.name
@@ -97,6 +105,8 @@ resource "aws_cloudwatch_metric_alarm" "rds_storage" {
   threshold           = 2000000000 # 2 GB in bytes
   treat_missing_data  = "notBreaching"
   alarm_description   = "RDS free storage below 2 GB"
+  alarm_actions       = [aws_sns_topic.alarms.arn]
+  ok_actions          = [aws_sns_topic.alarms.arn]
   dimensions = {
     DBInstanceIdentifier = aws_db_instance.main.identifier
   }
