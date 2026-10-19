@@ -40,7 +40,7 @@ you can read top-to-bottom and learn the actual job from.
 
   ECR ── image registry (scan-on-push, keep-last-10)
   SSM Parameter Store ── DB creds as SecureString → injected into tasks
-  CloudWatch ── logs + dashboard + alarms (5xx, CPU, RDS storage)
+  CloudWatch ── logs + dashboard + alarms → SNS (encrypted) → email / Slack / pager
   IAM ── least-privilege task & execution roles
 ```
 
@@ -60,8 +60,9 @@ infrastructure around it.
 - **CI/CD** — GitHub Actions: `terraform validate` + app tests on every PR; build →
   ECR → **roll ECS** on merge (OIDC, no long-lived keys). Deploy **skips safely**
   until creds are configured.
-- **Observability** — CloudWatch log group, a one-screen dashboard, and the three
-  alarms that actually matter (app 5xx, ECS CPU, RDS storage).
+- **Observability** — CloudWatch log group, a one-screen dashboard, and alarms
+  that reach a person through an encrypted SNS topic: app 5xx, the ALB's own 5xx,
+  no healthy task (fires with zero traffic), ECS CPU, RDS storage.
 - **Cost-awareness** — a transparent [cost breakdown](docs/COST.md) and how to cut it.
 
 ## Quick start
@@ -116,6 +117,7 @@ This is a **reference** — clear over maximal. Before real production, turn on:
 
 - `db_multi_az` and `db_protect` for RDS (a standby in a second AZ; deletion protection and a final snapshot);
 - `enable_waf` for AWS WAF in front of the ALB;
+- `alarm_email` so the alarms reach someone (or subscribe Slack or a pager to the `alarm_topic_arn` output);
 - remote state in S3 with `use_lockfile` (see [Decisions](docs/DECISIONS.md));
 - per-environment workspaces.
 
