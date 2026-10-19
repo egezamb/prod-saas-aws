@@ -108,3 +108,15 @@ run "waf_rate_limit_below_the_aws_minimum_is_refused" {
 
   expect_failures = [var.waf_rate_limit]
 }
+
+run "an_outage_alarms_even_when_no_request_reaches_the_app" {
+  command = plan
+
+  assert {
+    condition = (
+      aws_cloudwatch_metric_alarm.alb_elb_5xx.metric_name == "HTTPCode_ELB_5XX_Count" &&
+      aws_cloudwatch_metric_alarm.alb_elb_5xx.namespace == "AWS/ApplicationELB"
+    )
+    error_message = "The ALB's own 5xx (no healthy target, dropped or timed-out connections) must have an alarm."
+  }
+}

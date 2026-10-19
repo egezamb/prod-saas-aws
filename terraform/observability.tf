@@ -4,7 +4,7 @@ resource "aws_cloudwatch_log_group" "app" {
   tags              = { Name = local.name }
 }
 
-# --- Alarms: the three that matter for a web service ---
+# --- Alarms: what a web service needs to page on ---
 
 # 1. App is throwing 5xx (bad deploy / bug).
 resource "aws_cloudwatch_metric_alarm" "alb_5xx" {
@@ -24,7 +24,27 @@ resource "aws_cloudwatch_metric_alarm" "alb_5xx" {
   tags = { Name = "${local.name}-alb-5xx" }
 }
 
-# 2. Sustained high CPU (under-provisioned / needs scaling attention).
+# 2. The load balancer itself answers 5xx: 503 with no healthy target, 502 when a task drops the
+# connection, 504 when it does not answer in time. These never reach the app, so the target 5xx
+# alarm above stays quiet through a full outage.
+resource "aws_cloudwatch_metric_alarm" "alb_elb_5xx" {
+  alarm_name          = "${local.name}-alb-elb-5xx"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "HTTPCode_ELB_5XX_Count"
+  namespace           = "AWS/ApplicationELB"
+  period              = 60
+  statistic           = "Sum"
+  threshold           = 5
+  treat_missing_data  = "notBreaching"
+  alarm_description   = "The ALB returned >5 of its own 5xx (502/503/504) in a minute: tasks are down or not answering"
+  dimensions = {
+    LoadBalancer = aws_lb.main.arn_suffix
+  }
+  tags = { Name = "${local.name}-alb-elb-5xx" }
+}
+
+# 3. Sustained high CPU (under-provisioned / needs scaling attention).
 resource "aws_cloudwatch_metric_alarm" "ecs_cpu" {
   alarm_name          = "${local.name}-ecs-cpu-high"
   comparison_operator = "GreaterThanThreshold"
@@ -43,7 +63,7 @@ resource "aws_cloudwatch_metric_alarm" "ecs_cpu" {
   tags = { Name = "${local.name}-ecs-cpu-high" }
 }
 
-# 3. Database running low on storage.
+# 4. Database running low on storage.
 resource "aws_cloudwatch_metric_alarm" "rds_storage" {
   alarm_name          = "${local.name}-rds-low-storage"
   comparison_operator = "LessThanThreshold"
