@@ -10,7 +10,7 @@ by region and change over time — treat it as an order of magnitude, not a quot
 | **Application Load Balancer** | 1 × | **~$16** + LCU | Also hourly, always-on. |
 | **RDS PostgreSQL** | `db.t4g.micro`, 20 GB gp3, single-AZ | **~$13** | Graviton, cheapest sane option. `db_multi_az = true` adds a standby in a second AZ and roughly doubles this line. |
 | **ECS Fargate** | 2 tasks × 0.25 vCPU / 0.5 GB | **~$13** | Scales up under load (2→6). |
-| **ECR / SSM / CloudWatch / logs** | — | **~$2–5** | Storage + a few metrics/alarms. |
+| **ECR / SSM / CloudWatch / KMS / logs** | — | **~$3–6** | Storage, a few metrics and alarms, and the alarm topic's KMS key ($1). SNS email is free for the first 1,000 a month. |
 | **AWS WAF** (opt-in) | off; `enable_waf = true` | **~$9** + $0.60 per million requests | A web ACL ($5) with four rules ($1 each): three AWS managed rule groups and a per-IP rate limit. Not in the total. |
 | **Total** | | **≈ $75–80 / month** | Dominated by NAT + ALB (~$48 of it). |
 

@@ -87,5 +87,6 @@ database password, so it shouldn't live on one laptop. Before using this for rea
 - **Task definitions the deploy registered** stay in the account after
   `terraform destroy`; they cost nothing.
 - **Before production:** ALB access logs and deletion protection, WAF, Multi-AZ
-  RDS, customer-managed KMS keys and longer log retention, all left out here for
-  cost and simplicity.
+  RDS, customer-managed KMS keys for the data and longer log retention, all left
+  out here for cost and simplicity. The alarm topic does have its own key: CloudWatch
+  cannot publish to a topic encrypted with the AWS managed `aws/sns` key.
