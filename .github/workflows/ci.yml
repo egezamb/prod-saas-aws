@@ -63,6 +63,6 @@ jobs:
         with:
           # The Python the image ships (app/Dockerfile). Change both together.
           python-version: "3.14"
-      - run: pip install -r requirements.txt pytest httpx
+      - run: pip install -r requirements-dev.txt
       - run: pytest -q
       - run: docker build -t app:ci .
