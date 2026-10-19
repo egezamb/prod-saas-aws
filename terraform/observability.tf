@@ -44,7 +44,29 @@ resource "aws_cloudwatch_metric_alarm" "alb_elb_5xx" {
   tags = { Name = "${local.name}-alb-elb-5xx" }
 }
 
-# 3. Sustained high CPU (under-provisioned / needs scaling attention).
+# 3. No healthy task behind the ALB. Unlike the 5xx alarms this does not need traffic, so a service
+# that went down at night alarms before the first visitor finds it. Missing data counts as down:
+# the metric is only reported while the target group has registered targets, and a service with no
+# running task has none.
+resource "aws_cloudwatch_metric_alarm" "no_healthy_targets" {
+  alarm_name          = "${local.name}-no-healthy-targets"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "HealthyHostCount"
+  namespace           = "AWS/ApplicationELB"
+  period              = 60
+  statistic           = "Maximum" # every load balancer node sees no healthy target, not just one
+  threshold           = 1
+  treat_missing_data  = "breaching"
+  alarm_description   = "No healthy ECS task behind the ALB for 2 minutes"
+  dimensions = {
+    LoadBalancer = aws_lb.main.arn_suffix
+    TargetGroup  = aws_lb_target_group.app.arn_suffix
+  }
+  tags = { Name = "${local.name}-no-healthy-targets" }
+}
+
+# 4. Sustained high CPU (under-provisioned / needs scaling attention).
 resource "aws_cloudwatch_metric_alarm" "ecs_cpu" {
   alarm_name          = "${local.name}-ecs-cpu-high"
   comparison_operator = "GreaterThanThreshold"
@@ -63,7 +85,7 @@ resource "aws_cloudwatch_metric_alarm" "ecs_cpu" {
   tags = { Name = "${local.name}-ecs-cpu-high" }
 }
 
-# 4. Database running low on storage.
+# 5. Database running low on storage.
 resource "aws_cloudwatch_metric_alarm" "rds_storage" {
   alarm_name          = "${local.name}-rds-low-storage"
   comparison_operator = "LessThanThreshold"

@@ -120,3 +120,15 @@ run "an_outage_alarms_even_when_no_request_reaches_the_app" {
     error_message = "The ALB's own 5xx (no healthy target, dropped or timed-out connections) must have an alarm."
   }
 }
+
+run "no_healthy_target_alarms_without_traffic" {
+  command = plan
+
+  assert {
+    condition = (
+      aws_cloudwatch_metric_alarm.no_healthy_targets.metric_name == "HealthyHostCount" &&
+      aws_cloudwatch_metric_alarm.no_healthy_targets.treat_missing_data == "breaching"
+    )
+    error_message = "No healthy target must alarm, and a missing data point (nothing registered) must count as down."
+  }
+}
