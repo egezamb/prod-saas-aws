@@ -62,7 +62,8 @@ infrastructure around it.
   until creds are configured.
 - **Observability** — CloudWatch log group, a one-screen dashboard, and alarms
   that reach a person through an encrypted SNS topic: app 5xx, the ALB's own 5xx,
-  no healthy task (fires with zero traffic), ECS CPU, RDS storage.
+  no healthy task (fires with zero traffic), ECS CPU, RDS storage. The Postgres log
+  goes to CloudWatch too, with every statement slower than `db_slow_query_ms` (500 ms).
 - **Cost-awareness** — a transparent [cost breakdown](docs/COST.md) and how to cut it.
 
 ## Quick start
