@@ -45,6 +45,14 @@ tear down while learning. `db_protect = true` turns on deletion protection and a
 final snapshot together; Multi-AZ stays an inline flip in `rds.tf`. IAM token
 sign-in is on, next to the password, so callers can move to short-lived tokens.
 
+### The Postgres log in CloudWatch, slow statements from 500 ms
+The database log is exported next to the app's, so a slow query or a failed
+connection is visible without signing in to the instance. `db_slow_query_ms`
+(500 by default, -1 off) sets `log_min_duration_statement`: high enough that a
+healthy app logs almost nothing, low enough to catch a missing index. The log
+group is declared in Terraform with 30-day retention, because RDS would create
+it on first export with no expiry.
+
 ### Immutable image tags, and the first apply
 ECR tags are immutable, so every running image traces back to one commit and
 nothing can be pushed over it. Deploys push the commit SHA and register a new
