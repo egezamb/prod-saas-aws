@@ -113,6 +113,12 @@ variable "flow_log_traffic_type" {
   }
 }
 
+variable "db_slow_query_ms" {
+  description = "Postgres logs every statement that runs longer than this many milliseconds, with its duration, to CloudWatch. -1 turns slow-statement logging off."
+  type        = number
+  default     = 500
+}
+
 variable "db_protect" {
   description = "Production safeguards for RDS: deletion protection and a final snapshot. Off by default so a demo stack can be destroyed in one step."
   type        = bool

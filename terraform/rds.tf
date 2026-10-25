@@ -4,6 +4,27 @@ resource "aws_db_subnet_group" "main" {
   tags       = { Name = local.name }
 }
 
+# Postgres' own log (errors, slow statements) in CloudWatch, next to the app's. Declared here so
+# Terraform owns its retention: RDS would otherwise create it on first export, kept forever.
+resource "aws_cloudwatch_log_group" "rds" {
+  name              = "/aws/rds/instance/${local.name}/postgresql"
+  retention_in_days = 30
+  tags              = { Name = "${local.name}-postgresql" }
+}
+
+resource "aws_db_parameter_group" "main" {
+  name   = local.name
+  family = "postgres16"
+
+  # A dynamic parameter: a new value applies without a reboot.
+  parameter {
+    name  = "log_min_duration_statement"
+    value = var.db_slow_query_ms
+  }
+
+  tags = { Name = local.name }
+}
+
 resource "aws_db_instance" "main" {
   identifier     = local.name
   engine         = "postgres"
@@ -27,8 +48,11 @@ resource "aws_db_instance" "main" {
 
   db_subnet_group_name   = aws_db_subnet_group.main.name
   vpc_security_group_ids = [aws_security_group.rds.id]
-  publicly_accessible    = false # private subnets only; said explicitly, not left to the API default
-  multi_az               = var.db_multi_az
+  # On an existing instance, moving to this parameter group takes one reboot ("pending-reboot").
+  parameter_group_name            = aws_db_parameter_group.main.name
+  enabled_cloudwatch_logs_exports = ["postgresql"]
+  publicly_accessible             = false # private subnets only; said explicitly, not left to the API default
+  multi_az                        = var.db_multi_az
 
   backup_retention_period = 7
   # One switch for real production: refuse deletes, and keep a final snapshot if it is deleted anyway.
@@ -38,4 +62,6 @@ resource "aws_db_instance" "main" {
   apply_immediately         = true
 
   tags = { Name = local.name }
+
+  depends_on = [aws_cloudwatch_log_group.rds] # the group exists before RDS starts exporting
 }
