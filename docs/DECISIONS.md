@@ -94,7 +94,8 @@ database password, so it shouldn't live on one laptop. Before using this for rea
   `<name>-final`; a second destroy needs that snapshot deleted or renamed first.
 - **Task definitions the deploy registered** stay in the account after
   `terraform destroy`; they cost nothing.
-- **Before production:** ALB access logs and deletion protection, WAF, Multi-AZ
-  RDS, customer-managed KMS keys for the data and longer log retention, all left
-  out here for cost and simplicity. The alarm topic does have its own key: CloudWatch
+- **Before production:** turn on the switches the README lists (`db_multi_az`,
+  `db_protect`, `enable_waf`, `enable_alb_access_logs`). Still left out for cost
+  and simplicity: ALB deletion protection, customer-managed KMS keys for the data
+  and longer log retention. The alarm topic does have its own key: CloudWatch
   cannot publish to a topic encrypted with the AWS managed `aws/sns` key.

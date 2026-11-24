@@ -64,6 +64,75 @@ run "db_protect_refuses_deletes_and_keeps_a_final_snapshot" {
   }
 }
 
+run "alb_access_logs_are_off_by_default" {
+  command = plan
+
+  assert {
+    condition     = length(aws_s3_bucket.alb_logs) == 0 && length(aws_lb.main.access_logs) == 0
+    error_message = "No access log bucket and no access_logs block unless enable_alb_access_logs is set."
+  }
+}
+
+run "enable_alb_access_logs_writes_to_a_private_expiring_bucket" {
+  command = plan
+
+  variables {
+    enable_alb_access_logs = true
+  }
+
+  assert {
+    condition     = length(aws_lb.main.access_logs) == 1 && aws_lb.main.access_logs[0].enabled
+    error_message = "enable_alb_access_logs must turn on the ALB's access logs."
+  }
+  assert {
+    condition     = aws_lb.main.access_logs[0].bucket == aws_s3_bucket.alb_logs[0].bucket
+    error_message = "The ALB must write to the access log bucket."
+  }
+  assert {
+    condition     = one(one(aws_s3_bucket_server_side_encryption_configuration.alb_logs[0].rule).apply_server_side_encryption_by_default).sse_algorithm == "AES256"
+    error_message = "ALB access logs can only be delivered to an SSE-S3 bucket."
+  }
+  assert {
+    condition = alltrue([
+      aws_s3_bucket_public_access_block.alb_logs[0].block_public_acls,
+      aws_s3_bucket_public_access_block.alb_logs[0].block_public_policy,
+      aws_s3_bucket_public_access_block.alb_logs[0].ignore_public_acls,
+      aws_s3_bucket_public_access_block.alb_logs[0].restrict_public_buckets,
+    ])
+    error_message = "The access log bucket must block all public access."
+  }
+  assert {
+    condition     = one(aws_s3_bucket_lifecycle_configuration.alb_logs[0].rule).expiration[0].days == 30
+    error_message = "Access logs must expire after 30 days."
+  }
+  # The resource ARNs hold the bucket's ARN, which a plan does not know yet.
+  assert {
+    condition = (
+      one(data.aws_iam_policy_document.alb_logs[0].statement[0].principals).identifiers == toset(["logdelivery.elasticloadbalancing.amazonaws.com"])
+      && data.aws_iam_policy_document.alb_logs[0].statement[0].actions == toset(["s3:PutObject"])
+    )
+    error_message = "Only ELB log delivery may write to the access log bucket."
+  }
+  assert {
+    condition     = aws_s3_bucket.alb_logs[0].force_destroy
+    error_message = "Without db_protect the demo stack, logs included, must be destroyable in one step."
+  }
+}
+
+run "db_protect_keeps_the_alb_access_logs" {
+  command = plan
+
+  variables {
+    enable_alb_access_logs = true
+    db_protect             = true
+  }
+
+  assert {
+    condition     = !aws_s3_bucket.alb_logs[0].force_destroy
+    error_message = "With db_protect, destroying the stack must not delete the access logs."
+  }
+}
+
 run "waf_is_off_by_default" {
   command = plan
 

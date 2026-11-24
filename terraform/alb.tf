@@ -9,7 +9,19 @@ resource "aws_lb" "main" {
   # where a parser that reads them differently could be used for request smuggling.
   drop_invalid_header_fields = true
 
+  dynamic "access_logs" {
+    for_each = var.enable_alb_access_logs ? [1] : []
+    content {
+      bucket  = aws_s3_bucket.alb_logs[0].bucket # known at plan time, unlike id
+      enabled = true
+    }
+  }
+
   tags = { Name = local.name }
+
+  # ELB writes a test file when logging is turned on, so the bucket policy (and its encryption)
+  # must be in place first (alb_logs.tf).
+  depends_on = [aws_s3_bucket_policy.alb_logs, aws_s3_bucket_server_side_encryption_configuration.alb_logs]
 }
 
 resource "aws_lb_target_group" "app" {
