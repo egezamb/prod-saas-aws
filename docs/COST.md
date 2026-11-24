@@ -12,6 +12,7 @@ by region and change over time — treat it as an order of magnitude, not a quot
 | **ECS Fargate** | 2 tasks × 0.25 vCPU / 0.5 GB | **~$13** | Scales up under load (2→6). |
 | **ECR / SSM / CloudWatch / KMS / logs** | — | **~$3–6** | Storage, a few metrics and alarms, and the alarm topic's KMS key ($1). SNS email is free for the first 1,000 a month. |
 | **AWS WAF** (opt-in) | off; `enable_waf = true` | **~$9** + $0.60 per million requests | A web ACL ($5) with four rules ($1 each): three AWS managed rule groups and a per-IP rate limit. Not in the total. |
+| **ALB access logs** (opt-in) | off; `enable_alb_access_logs = true` | **cents** | Delivery is free; S3 storage at $0.0245 per GB-month (eu-central-1), 30 days kept. Not in the total. |
 | **Total** | | **≈ $75–80 / month** | Dominated by NAT + ALB (~$48 of it). |
 
 ## The honest takeaway

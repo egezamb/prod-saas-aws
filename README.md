@@ -118,6 +118,7 @@ This is a **reference** — clear over maximal. Before real production, turn on:
 
 - `db_multi_az` and `db_protect` for RDS (a standby in a second AZ; deletion protection and a final snapshot);
 - `enable_waf` for AWS WAF in front of the ALB;
+- `enable_alb_access_logs` for one line per request in S3 (who called what, and how slowly), kept 30 days;
 - `alarm_email` so the alarms reach someone (or subscribe Slack or a pager to the `alarm_topic_arn` output);
 - remote state in S3 with `use_lockfile` (see [Decisions](docs/DECISIONS.md));
 - per-environment workspaces.

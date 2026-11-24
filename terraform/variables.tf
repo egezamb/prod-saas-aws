@@ -148,6 +148,12 @@ variable "waf_rate_limit" {
   }
 }
 
+variable "enable_alb_access_logs" {
+  description = "Write the ALB's access logs (one line per request) to an S3 bucket, kept 30 days (alb_logs.tf). Delivery is free; S3 storage costs cents a month at demo traffic."
+  type        = bool
+  default     = false
+}
+
 variable "requests_per_target" {
   description = "Opt-in request-count autoscaling: target ALB requests per task per minute. 0 (default) keeps CPU-only scaling; set >0 for an I/O-bound workload, so the service also scales to hold this many requests per task."
   type        = number
